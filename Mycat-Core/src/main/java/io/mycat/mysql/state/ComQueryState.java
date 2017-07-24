@@ -41,6 +41,7 @@ public class ComQueryState extends AbstractMysqlConnectionState {
             MySQLBackendConnection finalBackendConnection = backendConnection;
             frontCon.setPassthrough(true); // 开启透传模式
             frontCon.addTodoTask(() -> {
+                //这边是有问题的!!!zwy 
             	frontCon.setNextState(ComQueryResponseState.INSTANCE);
             	/*
             	 * 1. 开启透传模式

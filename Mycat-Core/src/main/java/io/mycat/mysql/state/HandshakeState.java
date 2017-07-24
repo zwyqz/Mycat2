@@ -46,16 +46,21 @@ public class HandshakeState extends AbstractMysqlConnectionState {
     	LOGGER.debug("Backend in HandshakeState");
     	boolean returnflag;
         try {
-        	processHandShakePacket(mySQLBackendConnection);
-        	mySQLBackendConnection.authenticate();
-            mySQLBackendConnection.setNextState(AuthenticatingState.INSTANCE);
-            mySQLBackendConnection.setWriteCompleteListener(()->{
-            	mySQLBackendConnection.clearCurrentPacket();
-            	mySQLBackendConnection.getDataBuffer().clear();
-            	mySQLBackendConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
-            });
-            
-            returnflag = false;
+           //判断是否是全包接受
+            if(!validateFullPacket(mySQLBackendConnection)) {
+                mySQLBackendConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
+                returnflag = false;
+            } else {
+                processHandShakePacket(mySQLBackendConnection);
+                mySQLBackendConnection.authenticate();
+                mySQLBackendConnection.setNextState(AuthenticatingState.INSTANCE);
+                mySQLBackendConnection.setWriteCompleteListener(()->{
+                    mySQLBackendConnection.clearCurrentPacket();
+                    mySQLBackendConnection.getDataBuffer().clear();
+                    mySQLBackendConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
+                });
+                returnflag = false;
+            }
         } catch (Throwable e) {
             LOGGER.warn("frontend InitialState error", e);
             mySQLBackendConnection.setNextState(CloseState.INSTANCE);

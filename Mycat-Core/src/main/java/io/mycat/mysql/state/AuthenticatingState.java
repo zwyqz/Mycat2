@@ -12,6 +12,7 @@ import io.mycat.front.MySQLFrontConnection;
 import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.net2.states.ClosingState;
+import io.mycat.net2.states.NetworkState;
 import io.mycat.net2.states.ReadWaitingState;
 import io.mycat.util.CharsetUtil;
 
@@ -39,6 +40,12 @@ public class AuthenticatingState extends AbstractMysqlConnectionState {
     protected boolean frontendHandle(MySQLFrontConnection mySQLFrontConnection, Object attachment) {
         try {
             LOGGER.debug("Frontend in AuthenticatingState");
+            //判断是否是全包接受
+            if(!validateFullPacket(mySQLFrontConnection)) {
+                mySQLFrontConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
+                return false;
+            }
+            
             AuthPacket auth = new AuthPacket();
             auth.read(mySQLFrontConnection.getDataBuffer());
 
@@ -52,8 +59,17 @@ public class AuthenticatingState extends AbstractMysqlConnectionState {
             }
 
             // Fake check password
-            LOGGER.debug("Check user password. " + new String(auth.password));
-
+            LOGGER.debug("Check user password.  " + new String(auth.password));
+//            for(int i = 0; i < auth.password.length; i++ ){
+//                String str = Integer.toHexString(auth.password[i]);
+//                    if(str.length() > 2) { 
+//                        str = str.substring(6);
+//                    } else if(str.length() == 1) {
+//                        str = "0" + str;
+//                    }
+//                    System.out.print(str);
+//            }
+//            System.out.println("\n");
             // check schema
             LOGGER.debug("Check database. " + auth.database);
 
@@ -61,6 +77,7 @@ public class AuthenticatingState extends AbstractMysqlConnectionState {
         } catch (Throwable e) {
             LOGGER.warn("Frontend AuthenticatingState error:", e);
             mySQLFrontConnection.setNextState(CloseState.INSTANCE);
+            mySQLFrontConnection.setNextNetworkState(ClosingState.INSTANCE);
             return true;
         }
     }
@@ -112,7 +129,12 @@ public class AuthenticatingState extends AbstractMysqlConnectionState {
         LOGGER.debug("Backend in AuthenticatingState");
         boolean returnflag = false;
         try {
-        	processPacketHeader(mySQLBackendConnection);
+        	//processPacketHeader(mySQLBackendConnection);
+            //判断是否是全包接受
+            if(!validateFullPacket(mySQLBackendConnection)) {
+                mySQLBackendConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
+                return false;
+            }
         	byte packageType = mySQLBackendConnection.getCurrentPacketType();
         	if (packageType == MySQLPacket.ERROR_PACKET) {
         		mySQLBackendConnection.setNextState(CloseState.INSTANCE);
@@ -121,9 +143,11 @@ public class AuthenticatingState extends AbstractMysqlConnectionState {
             	mySQLBackendConnection.getDataBuffer().clear();
             	mySQLBackendConnection.setNextState(IdleState.INSTANCE);
                 MySQLFrontConnection mySQLFrontConnection = mySQLBackendConnection.getMySQLFrontConnection();
+                //mySQLFrontConnection为空表示,数据库连接池的初始化连接
                 if (mySQLFrontConnection != null) {
                     mySQLFrontConnection.executePendingTask();
                 }else{
+                    //这边应该是空闲状态吧。zwy?? 不读 不写状态吧
                 	mySQLBackendConnection.clearCurrentPacket();
                 	mySQLBackendConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
                 }

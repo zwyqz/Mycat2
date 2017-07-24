@@ -60,6 +60,7 @@ public class ComQueryResponseState extends AbstractMysqlConnectionState {
                 }
             	else {
                     mySQLBackendConnection.setNextState(ComQueryColumnDefState.INSTANCE);
+                    //writeLimit+packetLength??
                     mySQLBackendConnection.getDataBuffer().writeLimit(mySQLBackendConnection.getCurrentPacketLength());
                     returnflag = true;   //状态机自驱进入下一个状态
                 }

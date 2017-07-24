@@ -29,6 +29,33 @@ public abstract class AbstractMysqlConnectionState implements MysqlConnectionSta
             throw new IllegalArgumentException("No such type of MySQLConnection:" + mySQLConnection.getClass());
         }
     }
+
+    /**
+     * 判断报文头是否为全包
+     * @param conn
+     * @return true 报文头解析成功，false 报文头没有解析出来
+     * @throws IOException
+     */
+    protected boolean validateFullPacket(MySQLConnection conn)throws IOException{
+        final MycatByteBuffer buffer = conn.getDataBuffer();
+        
+        int offset = -1;
+        int limit = buffer.writeIndex();
+        if(conn.isPassthrough()) {
+           offset = buffer.writeLimit();
+        } else {
+            offset = buffer.readIndex();
+        }
+        
+        if (!MySQLConnection.validateHeader(offset, limit)) {
+           return false;
+        }
+        int length = MySQLConnection.getPacketLength(buffer, offset);
+        if( length > limit) {
+            return false;
+        }
+        return true;
+    }
     
     /**
      * 处理报文头
