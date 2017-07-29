@@ -88,39 +88,40 @@ public abstract class AbstractMysqlConnectionState implements MysqlConnectionSta
         int offset = buffer.writeLimit();
         int limit = buffer.writeIndex();
         byte packetType = conn.getCurrentPacketType();
-        int remainLength = conn.getRemainLength();
+        int remainLength = conn.getRemainLength();  //当前包还需要接受remainLength长度的数据
         
+        //还未透传过的，可以获取packet 的相关信息
         if(remainLength == 0) {
             //接受新的包
             if (!MySQLConnection.validateHeader(offset, limit)) {
-                conn.setCanDrive(false);
-                conn.setDealFinish(true);
-                conn.setDirectTransferMode(TransferMode.SHORT_HALF_PACKET);  //半包透传
+                conn.setCanDrive(false); //是否可驱动状态机
+                conn.setDealFinish(true); //当前的buffer是否处理完毕
+                conn.setDirectTransferMode(TransferMode.SHORT_HALF_PACKET);  //短半包透传
                return;
             }
-            int length = MySQLConnection.getPacketLength(buffer, offset);
-            //这边有可能边界溢出在load infile local data 的时候
-            packetType = buffer.getByte(offset + MySQLConnection.msyql_packetHeaderSize);
-            remainLength = length;
+            int length = MySQLConnection.getPacketLength(buffer, offset); //当前packet的长度
+
+            packetType = buffer.getByte(offset + MySQLConnection.msyql_packetHeaderSize); //获取packet的类型
+            remainLength = length; //还需要接受的包的长度
             conn.setRemainLength(length);
-            conn.setLength(length);
-            conn.setCurrentPacketType(packetType);
+            conn.setLength(length); //当前包的长度
+            conn.setCurrentPacketType(packetType); //当前包的类型
         }
         //当前包全部接受完毕
         if(offset + remainLength <= limit) {
-            conn.setCanDrive(true);
-            conn.setDataStartPos(offset);
-            conn.setDataEndPos(offset + remainLength);
+            conn.setCanDrive(true);   //packet已经接受完毕 可以驱动状态机进入下一个状态
+            conn.setDataStartPos(offset); //当前包buffer可以处理的开始为止
+            conn.setDataEndPos(offset + remainLength); //当前包buffer可以处理的结束为止
             conn.setDealFinish(offset + remainLength >= limit);//当前buffer是否处理完毕，然后可以进行buffer的写出
             if(conn.getLength() == remainLength) {
-                conn.setCurrentPacketLength(offset + conn.getLength());
-                conn.setCurrentPacketStartPos(offset);
-                conn.setDirectTransferMode(TransferMode.COMPLETE_PACKET);
+                conn.setCurrentPacketLength(offset + conn.getLength()); //设置全包的packet的开始位置
+                conn.setCurrentPacketStartPos(offset); //设置全包的packet的结束为止
+                conn.setDirectTransferMode(TransferMode.COMPLETE_PACKET); //当前包是全包 所有的packet的数据在一个buffer中
             } else {
-                conn.setDirectTransferMode(TransferMode.LONG_COMPLETE_PACKET);
+                conn.setDirectTransferMode(TransferMode.LONG_COMPLETE_PACKET); //之前已经透传过若干次的长半包，当前的数据接受完，当前的包就全部接受完
             }
-            conn.setRemainLength(0);
-            buffer.writeLimit(offset + remainLength);
+            conn.setRemainLength(0); //剩余接受长度为零
+            buffer.writeLimit(offset + remainLength); //修改可透传的位置
             return ;
         } else if(!MySQLPacket.receiveCompletePackete(packetType)){
             //可以透传半包的数据
@@ -129,7 +130,7 @@ public abstract class AbstractMysqlConnectionState implements MysqlConnectionSta
             conn.setDataEndPos(limit);
             conn.setDealFinish(offset + remainLength >= limit); //这边应该为true
             conn.setRemainLength(offset + remainLength - limit);
-            buffer.writeLimit(limit);
+            buffer.writeLimit(limit); //修改可透传的位置
             conn.setDirectTransferMode(TransferMode.LONG_HALF_PACKET);
             return ;
         }
