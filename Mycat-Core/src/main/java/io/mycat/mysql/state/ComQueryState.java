@@ -41,31 +41,60 @@ public class ComQueryState extends AbstractMysqlConnectionState {
             MySQLBackendConnection finalBackendConnection = backendConnection;
             frontCon.setPassthrough(true); // 开启透传模式
             frontCon.addTodoTask(() -> {
-                //这边是有问题的!!!zwy 
-            	frontCon.setNextState(ComQueryResponseState.INSTANCE);
+               // processPacketProcedure(frontCon);
+                //if(!validateCompletePacket(frontCon)) {
+               //     frontCon.setNextNetworkState(ReadWaitingState.INSTANCE);
+               //     return;
+              //  } 
+                boolean transferFinish = false,isAllFinish = false;
+                if(frontCon.getCanDrive()) {
+                    //zwy 
+                    frontCon.setNextState(ComQueryResponseState.INSTANCE);
+                    transferFinish = true;
+                    isAllFinish = false;
+                }
             	/*
             	 * 1. 开启透传模式
             	 * 2. 同步状态机状态
             	 */
                 //开启透传模式
             	finalBackendConnection.setPassthrough(true)
-            						  .setDirectTransferMode(TransferMode.COMPLETE_PACKET) //透传方式整包透传
+            						  .setDirectTransferMode(frontCon.getDirectTransferMode()) //透传方式整包透传
                 					  .setCurrentPacketLength(frontCon.getCurrentPacketLength())
                 					  .setCurrentPacketStartPos(frontCon.getCurrentPacketStartPos())
                 					  .setCurrentPacketType(frontCon.getCurrentPacketType());
-                
-                SQLEngineCtx.INSTANCE().getDataTransferChannel().transferToBackend(frontCon, true,true,false);
+            	if(frontCon.isDealFinish()) {
+            	    SQLEngineCtx.INSTANCE().getDataTransferChannel().transferToBackend(frontCon, transferFinish, isAllFinish);
+            	}
             });
         } else {
 
         	if(frontCon.isPassthrough()){  //如果房钱已经处于透传模式.
-        		processPacketHeader(frontCon);
+        		processPacketProcedure(frontCon);
         	}else{
         		frontCon.setPassthrough(true);
         		backendConnection.setPassthrough(true);
         	}
+        	boolean transferFinish = false,isAllFinish = false;
+        	//判断当前包是否接受完毕，可以驱动洗衣状态机
+        	if(frontCon.getCanDrive()) {
+        	    //设置下一个协议状态机的状态 
+        	    frontCon.setNextState(ComQueryResponseState.INSTANCE);
+        	    transferFinish = true;
+        	    isAllFinish = false;
+               // SQLEngineCtx.INSTANCE().getDataTransferChannel().transferToBackend(frontCon, true, true,false);
+        	} else {
+        	    transferFinish = false;
+                isAllFinish = false;
+              //  SQLEngineCtx.INSTANCE().getDataTransferChannel().transferToBackend(frontCon, true, false,false);
+        	}
 
-    		MycatByteBuffer dataBuffer = frontCon.getDataBuffer();
+        	if(frontCon.isDealFinish()) {
+                SQLEngineCtx.INSTANCE().getDataTransferChannel()
+                    .transferToBackend(frontCon,  transferFinish, isAllFinish);
+                //透传，等待下一次读取数据之后驱动协议状态机
+            }
+    		/*MycatByteBuffer dataBuffer = frontCon.getDataBuffer();
         	switch(frontCon.getDirectTransferMode()){
             case COMPLETE_PACKET:
             	//设置当前包结束位置
@@ -95,6 +124,7 @@ public class ComQueryState extends AbstractMysqlConnectionState {
             case NONE:
             	throw new InvalidObjectException("invalid packettype is NONE");
             }
+        	*/
         }
         return false;
     }

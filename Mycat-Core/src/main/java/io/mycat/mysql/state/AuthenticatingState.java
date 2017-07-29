@@ -43,7 +43,7 @@ public class AuthenticatingState extends AbstractMysqlConnectionState {
         try {
             LOGGER.debug("Frontend in AuthenticatingState");
             //判断是否是全包接受
-            if(!validateFullPacket(mySQLFrontConnection)) {
+            if(!validateCompletePacket(mySQLFrontConnection)) {
                 mySQLFrontConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
                 return false;
             }
@@ -135,7 +135,7 @@ public class AuthenticatingState extends AbstractMysqlConnectionState {
         try {
         	//processPacketHeader(mySQLBackendConnection);
             //判断是否是全包接受
-            if(!validateFullPacket(mySQLBackendConnection)) {
+            if(!validateCompletePacket(mySQLBackendConnection)) {
                 mySQLBackendConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
                 return false;
             }

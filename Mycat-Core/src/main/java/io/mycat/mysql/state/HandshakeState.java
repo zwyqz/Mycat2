@@ -47,7 +47,7 @@ public class HandshakeState extends AbstractMysqlConnectionState {
     	boolean returnflag;
         try {
            //判断是否是全包接受
-            if(!validateFullPacket(mySQLBackendConnection)) {
+            if(!validateCompletePacket(mySQLBackendConnection)) {
                 mySQLBackendConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
                 returnflag = false;
             } else {

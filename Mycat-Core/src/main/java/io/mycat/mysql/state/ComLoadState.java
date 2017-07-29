@@ -10,6 +10,7 @@ import io.mycat.backend.MySQLBackendConnection;
 import io.mycat.buffer.MycatByteBuffer;
 import io.mycat.front.MySQLFrontConnection;
 import io.mycat.mysql.MySQLConnection;
+import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.net2.states.NoReadAndWriteState;
 
 public class ComLoadState extends AbstractMysqlConnectionState{
@@ -27,8 +28,25 @@ public class ComLoadState extends AbstractMysqlConnectionState{
         try {
         	frontCon.setNextNetworkState(NoReadAndWriteState.INSTANCE);
         	//  如果当前状态数据报文可能有多个，需要透传
-        	while(true){
-        		processPacketHeader(frontCon);
+        	//while(true){
+            	processPacketProcedure(frontCon);
+                byte packageType;
+                boolean transferFinish = false;
+                if(frontCon.getCanDrive()) {
+                    returnflag = true;
+                } else if (validateIsLoadEndPacket(frontCon)) {
+                    frontCon.setNextState(ComQueryResponseState.INSTANCE);
+                    returnflag = false;
+                    transferFinish = true;
+                }
+                if(frontCon.isDealFinish()) {
+                    SQLEngineCtx.INSTANCE().getDataTransferChannel()
+                        .transferToBackend(frontCon,  transferFinish, false);
+                   // returnflag = true;
+                    //透传，等待下一次读取数据之后驱动协议状态机
+                }
+        	    
+        	/*	processPacketHeader(frontCon);
         		MycatByteBuffer dataBuffer = frontCon.getDataBuffer();
             	switch(frontCon.getDirectTransferMode()){
                 case COMPLETE_PACKET:
@@ -55,8 +73,8 @@ public class ComLoadState extends AbstractMysqlConnectionState{
         			return false;
                 case NONE:
                 	break;
-                }
-        	}
+                } */
+        	//}
         } catch (IOException e) {
             LOGGER.warn("Backend ComQueryColumnDefState error", e);
             frontCon.setNextState(CloseState.INSTANCE);

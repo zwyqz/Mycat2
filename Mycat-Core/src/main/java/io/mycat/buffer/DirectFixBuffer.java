@@ -58,10 +58,11 @@ public class DirectFixBuffer extends AbstractMycatByteBuffer {
 
     @Override
     public void clear() {
+        
         byteBuffer.clear();
         writeIndex(0);
-        writeLimit(0);
         readIndex(0);
+        writeLimit(0);
     }
 
     @Override

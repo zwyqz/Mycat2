@@ -33,7 +33,7 @@ public class PassThrouthtoFrontDataHandler implements DataHandler {
 	 * 透传时,进行前后端状态同步
 	 */
 	@Override
-	public void transfer(MySQLConnection in, boolean isTransferLastPacket,boolean transferFinish, boolean isAllFinish) throws IOException {
+	public void transfer(MySQLConnection in, boolean transferFinish, boolean isAllFinish) throws IOException {
 		
 		LOGGER.debug("current in  PassThrouthtoFrontDataHandler ");
 		
@@ -67,6 +67,7 @@ public class PassThrouthtoFrontDataHandler implements DataHandler {
         	if(TransferMode.SHORT_HALF_PACKET.equals(backendConn.getDirectTransferMode())){
         		backendConn.clearCurrentPacket();
         	}
+        	backendConn.cleanPacketeDesc();
         	if(transferFinish){ //当前透传方向 传输完成
         		frontConn .setNextNetworkState(ReadWaitingState.INSTANCE)
         				  .setDirectTransferMode(TransferMode.NONE);

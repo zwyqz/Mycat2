@@ -1,5 +1,7 @@
 package io.mycat.buffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by ynfeng on 2017/7/5.
@@ -8,6 +10,7 @@ public abstract class AbstractMycatByteBuffer implements MycatByteBuffer {
     private int writeIndex;
     private int readIndex;
     private int writeLimit;
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMycatByteBuffer.class);
 
     public AbstractMycatByteBuffer() {
         this.writeIndex = 0;
@@ -74,6 +77,7 @@ public abstract class AbstractMycatByteBuffer implements MycatByteBuffer {
     
     @Override
     public void writeLimit(int writeLimit){
+        LOGGER.debug("设置 writeLimit readIndex :"+ readIndex +" writeLimit :" + writeLimit + " writeIndex:" + writeIndex);
     	this.writeLimit = writeLimit;
     }
 

@@ -7,8 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.backend.MySQLBackendConnection;
+import io.mycat.engine.dataChannel.TransferMode;
 import io.mycat.front.MySQLFrontConnection;
 import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.net2.states.NetworkState;
+import io.mycat.net2.states.ReadWaitingState;
 
 /**
  * 空闲状态
@@ -26,7 +29,13 @@ public class IdleState extends AbstractMysqlConnectionState {
     @Override
     protected boolean frontendHandle(MySQLFrontConnection mySQLFrontConnection, Object attachment)throws IOException {
         LOGGER.debug("Frontend in IdleState");
-        processPacketHeader(mySQLFrontConnection);
+       // processPacketHeader(mySQLFrontConnection);
+        processPacketProcedure(mySQLFrontConnection);
+        if(mySQLFrontConnection.getDirectTransferMode() == TransferMode.SHORT_HALF_PACKET) {
+            //不用去注册的因为当前还是网络状态机还是读状态
+            //mySQLFrontConnection.setNextNetworkState(ReadWaitingState.INSTANCE);
+            return false;
+        }
         int packetType = mySQLFrontConnection.getCurrentPacketType();        
     	boolean returnflag = false;
         switch (packetType) {
@@ -49,7 +58,7 @@ public class IdleState extends AbstractMysqlConnectionState {
     protected boolean backendHandle(MySQLBackendConnection mySQLBackendConnection, Object attachment) throws IOException {
         LOGGER.debug("Backend in IdleState");
         boolean returnflag = false;
-        processPacketHeader(mySQLBackendConnection); 
+        /*processPacketHeader(mySQLBackendConnection); 
         switch (mySQLBackendConnection.getCurrentPacketType()) {
             case MySQLPacket.COM_QUERY:
                 LOGGER.debug("Backend receive a COM_QUERY in IdleState");
@@ -58,7 +67,7 @@ public class IdleState extends AbstractMysqlConnectionState {
                 break;
             default:
                 break;
-        }
+        }*/
         return returnflag;
     }
 }

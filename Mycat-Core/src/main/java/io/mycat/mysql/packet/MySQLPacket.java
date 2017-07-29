@@ -23,6 +23,9 @@
  */
 package io.mycat.mysql.packet;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import io.mycat.buffer.MycatByteBuffer;
 
 /**
@@ -31,7 +34,27 @@ import io.mycat.buffer.MycatByteBuffer;
  *
  */
 public abstract class MySQLPacket {
-    
+    /*
+    protected static final Map<Byte,Boolean> completePacketMap = new HashMap<Byte,Boolean>();
+    {
+        completePacketMap.put(OK_PACKET, true);
+        completePacketMap.put(EOF_PACKET, true);
+        completePacketMap.put(ERROR_PACKET, true);
+        completePacketMap.put(AUTH_PACKET, true);
+        completePacketMap.put(ROW_EOF_PACKET, true);
+    }
+     */
+    public static boolean receiveCompletePackete(byte packetType) {
+        
+        if(packetType == OK_PACKET || 
+                packetType == EOF_PACKET ||
+                packetType == ERROR_PACKET ||
+                packetType == AUTH_PACKET ||
+                packetType == ROW_EOF_PACKET ) {
+            return true;
+        }
+        return false;
+    }
     public static int packetHeaderSize = 4;
     
     // 后端报文类型

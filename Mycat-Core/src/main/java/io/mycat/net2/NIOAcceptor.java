@@ -35,7 +35,8 @@ public final class NIOAcceptor extends Thread {
 		this.serverChannel.configureBlocking(false);
 		/** 设置TCP属性 */
 		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-		serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 1024 * 16 * 2);
+		//serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 1024 * 16 * 2);
+	      serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 55);
 		// backlog=100
 		serverChannel.bind(new InetSocketAddress(bindIp, port), 100);
 		this.serverChannel.register(selector, SelectionKey.OP_ACCEPT);

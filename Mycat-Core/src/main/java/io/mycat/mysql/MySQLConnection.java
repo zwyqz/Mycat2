@@ -239,4 +239,77 @@ public class MySQLConnection extends Connection implements StatefulConnection{
         return state;
     }
 
+    private int remainLength = 0 ; //接受到的还剩余多少长度还未接受
+    private int dataStartPos = 0;
+    private int dataEndPos = 0;
+    private int length = 0;
+    private boolean dealFinish = false;
+    private boolean canDrive = false;
+    
+    public int getDataStartPos() {
+        return dataStartPos;
+    }
+
+    public void setDataStartPos(int dataStartPos) {
+        this.dataStartPos = dataStartPos;
+    }
+
+    public int getDataEndPos() {
+        return dataEndPos;
+    }
+
+    public void setDataEndPos(int dataEndPos) {
+        this.dataEndPos = dataEndPos;
+    }
+
+    public boolean isDealFinish() {
+        return dealFinish;
+    }
+
+    public void setDealFinish(boolean dealFinish) {
+        this.dealFinish = dealFinish;
+    }
+
+    public boolean getCanDrive() {
+        return canDrive;
+    }
+
+    public void setCanDrive(boolean canDrive) {
+        this.canDrive = canDrive;
+    }
+
+    /**
+    *@desc
+    *@auth zhangwy 
+    **/
+    public int getRemainLength() {
+        return remainLength;
+    }
+
+    /**
+    *@desc
+    *@auth zhangwy 
+    **/
+    public void setRemainLength(int remainLength) {
+        this.remainLength = remainLength;
+    }
+
+    /**
+    *@desc
+    *@auth zhangwy 
+    **/
+    public void setLength(int length) {
+        this.length = length;
+    }
+    
+    public int getLength() {
+        return this.length ;
+    }
+    
+    public void cleanPacketeDesc() {
+        dealFinish = false;
+        dataStartPos = 0 ;
+        dataEndPos = 0;
+        canDrive = false;
+    }
 }

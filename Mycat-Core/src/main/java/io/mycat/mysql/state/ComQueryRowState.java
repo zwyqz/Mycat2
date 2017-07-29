@@ -39,6 +39,46 @@ public class ComQueryRowState extends AbstractMysqlConnectionState {
         try {
 
         	while(true){
+        	    processPacketProcedure(mySQLBackendConnection);
+                byte packageType;
+                boolean transferFinish = false;boolean isAllFinish = false;
+                if(mySQLBackendConnection.getCanDrive()) {
+                    packageType = mySQLBackendConnection.getCurrentPacketType();
+                    if (packageType == MySQLPacket.EOF_PACKET) {
+                        MycatByteBuffer dataBuffer = mySQLBackendConnection.getDataBuffer();
+                        //TODO 开始位置计算并不精确
+                        int serverStatus = (int) dataBuffer.getFixInt(mySQLBackendConnection.getCurrentPacketStartPos()+7,2);
+                        mySQLBackendConnection.setServerStatus(serverStatus);
+                        //检查后面还有没有结果集
+                        if ((mySQLBackendConnection.getServerStatus() & ServerStatus.SERVER_MORE_RESULTS_EXISTS) == 0) {
+                            LOGGER.debug("backend com query response complete change to idle state");
+                            mySQLBackendConnection.setNextState(IdleState.INSTANCE);
+                            transferFinish = true;
+                            isAllFinish = true;
+                            returnflag = false;
+                          //  SQLEngineCtx.INSTANCE().getDataTransferChannel().transferToFront(mySQLBackendConnection, true,true, true);
+                          //  return false;
+                        } else {
+                            LOGGER.debug("backend com query response state have multi result");
+                            mySQLBackendConnection.setNextState(ComQueryResponseState.INSTANCE);
+                            transferFinish = false;
+                            isAllFinish = false;
+                            returnflag = true;
+                            //  return true;
+                        }
+                    }
+                }
+                if(mySQLBackendConnection.isDealFinish()) {
+                    SQLEngineCtx.INSTANCE().getDataTransferChannel()
+                        .transferToFront(mySQLBackendConnection,  transferFinish, isAllFinish);
+                    returnflag = false;
+                    //透传，等待下一次读取数据之后驱动协议状态机
+                    break;
+                }
+                if(mySQLBackendConnection.getCanDrive()) {
+                    break;
+                }
+        	    /*
         		processPacketHeader(mySQLBackendConnection);
         		MycatByteBuffer dataBuffer = mySQLBackendConnection.getDataBuffer();
             	byte packageType;
@@ -92,7 +132,7 @@ public class ComQueryRowState extends AbstractMysqlConnectionState {
     	                return false;
     	            case NONE:
     	                break;
-    	        }
+    	        }*/
         	}
         } catch (IOException e) {
             LOGGER.warn("frontend ComQueryRowState error", e);

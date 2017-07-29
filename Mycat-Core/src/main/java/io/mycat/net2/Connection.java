@@ -1,6 +1,7 @@
 package io.mycat.net2;
 
 import java.io.IOException;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -80,6 +81,12 @@ public abstract class Connection implements ClosableConnection, StatefulConnecti
         
     public Connection(SocketChannel channel) {
         this.channel = channel;
+        //debug zwy
+        try {
+            channel.setOption(StandardSocketOptions.SO_RCVBUF, 55);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         this.isClosed = false;
         this.startupTime = TimeUtil.currentTimeMillis();
         this.lastReadTime = startupTime;
@@ -490,7 +497,8 @@ public abstract class Connection implements ClosableConnection, StatefulConnecti
         return this;
     }
 
-    public int getCurrentPacketStartPos() {
+    public int getCurrentPacketStartPos() throws IOException {
+        if(this.directTransferMode != TransferMode.COMPLETE_PACKET) throw new IllegalArgumentException("读取currentPacketStartPos当前的指针只能为completePackete");
         return currentPacketStartPos;
     }
 

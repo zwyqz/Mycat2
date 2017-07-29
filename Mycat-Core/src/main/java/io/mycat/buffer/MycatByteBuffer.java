@@ -3,6 +3,11 @@ package io.mycat.buffer;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.mysql.state.ComQueryColumnDefState;
+
 /**
  * Mycat网络通信专用的buffer,封装了Mysql协议中的数据类型的读写
  * 非线程安全的类
